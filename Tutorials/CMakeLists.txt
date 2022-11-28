@@ -206,3 +206,43 @@ o2physics_add_dpl_workflow(hep-mc
                   SOURCES src/hepMC.cxx
                   PUBLIC_LINK_LIBRARIES O2::Framework
                   COMPONENT_NAME AnalysisTutorial)
+
+o2physics_add_dpl_workflow(h1-0-taskskeleton
+                  SOURCES src/o2at-h1-0-taskskeleton.cxx
+                  PUBLIC_LINK_LIBRARIES O2::Framework
+                  COMPONENT_NAME AnalysisTutorial)
+
+o2physics_add_dpl_workflow(h2-0-startingpoint
+                  SOURCES src/o2at-h2-0-startingpoint.cxx
+                  PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+                  COMPONENT_NAME AnalysisTutorial)
+
+o2physics_add_dpl_workflow(h2-1-startingpoint
+                  SOURCES src/o2at-h2-1-startingpoint.cxx
+                  PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+                  COMPONENT_NAME AnalysisTutorial)
+
+o2physics_add_dpl_workflow(h2-2-startingpoint
+                  SOURCES src/o2at-h2-2-startingpoint.cxx
+                  PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+                  COMPONENT_NAME AnalysisTutorial)
+
+o2physics_add_dpl_workflow(h2-3-startingpoint
+                  SOURCES src/o2at-h2-3-startingpoint.cxx
+                  PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+                  COMPONENT_NAME AnalysisTutorial)
+
+o2physics_add_dpl_workflow(h2-4-startingpoint
+                  SOURCES src/o2at-h2-4-startingpoint.cxx
+                  PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+                  COMPONENT_NAME AnalysisTutorial)
+
+o2physics_add_dpl_workflow(h3-0-startingpoint
+                  SOURCES src/o2at-h3-0-startingpoint.cxx
+                  PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+                  COMPONENT_NAME AnalysisTutorial)
+
+o2physics_add_dpl_workflow(hf-pca
+                  SOURCES src/o2-HF-pca.cxx
+                  PUBLIC_LINK_LIBRARIES O2::Framework
+                  COMPONENT_NAME AnalysisTutorial)
