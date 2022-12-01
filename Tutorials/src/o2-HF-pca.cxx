@@ -14,14 +14,14 @@ using MFTTracksLabeled = soa::Join<aod::MFTTracks, aod::McMFTTrackLabels>;
 
 struct pca_mc {
    //Number of bin
-   Configurable<int> nBins{"nBins", 1000, "N bins in all histos"};
+   Configurable<int> nBins{"nBins", 2000, "N bins in all histos"};
    //Histogram defined w/ HistogramRegistry
    HistogramRegistry registry{
       "registry",
       {
-         {"nParticle", "nParticle", {HistType::kTH1F, {{nBins, 0.0, 1000}}}},
+         {"nParticle", "nParticle", {HistType::kTH1F, {{nBins, -1000, 1000}}}},
          {"MuonPtEta", "; p_{T} (GeV/c); #eta; tracks", {HistType::kTH2F, {{600, 0 ,2*M_PI}, {35, -4.5, -1}}}},
-         {"MuonMotherParticle", "; pdgCode; counts", {HistType::kTH1F, {{nBins, 0.0, 1000}}}}
+         {"MuonMotherParticle", "; pdgCode; counts", {HistType::kTH1F, {{nBins, -1000, 1000}}}}
       }
    };
 
@@ -30,9 +30,15 @@ struct pca_mc {
          auto MFTTrackId = mfttrack.mcParticle();
          auto CollisionId = mfttrack.collisionId();
          auto PDGCode = MFTTrackId.pdgCode();
-         registry.get<TH1>(HIST("nParticle"))->Fill(abs(PDGCode));
+         registry.get<TH1>(HIST("nParticle"))->Fill(PDGCode);
          if(PDGCode==13){
-            registry.get<TH2>(HIST("MuonPtEta"))->Fill(MFTTrackId.pt(), MFTTrackId.eta());
+            auto mu_vx = MFTTrackId.vx();
+            auto mu_vy = MFTTrackId.vy();
+            auto mu_vz = MFTTrackId.vz();
+            auto mu_phi = MFTTrackId.phi();
+            auto mu_eta = MFTTrackId.eta();
+            auto mu_pt = MFTTrackId.pt();
+            registry.get<TH2>(HIST("MuonPtEta"))->Fill(mu_pt, mu_eta);
          }
          
          if(MFTTrackId.has_mothers() && PDGCode==13){
