@@ -20,14 +20,15 @@ struct pca_mc {
       "registry",
       {
          {"nParticle", "nParticle", {HistType::kTH1F, {{nBins, -1000, 1000}}}},
-         {"muon_vx", ": x (cm); counts", {HistType::kTH1F, {{nBins, -1000, 1000}}}},
-         {"muon_vy", ": y (cm); counts", {HistType::kTH1F, {{nBins, -1000, 1000}}}},
-         {"muon_vz", ": z (cm); counts", {HistType::kTH1F, {{nBins, -1000, 1000}}}},
-         {"MuonPtEta", "; p_{T} (GeV/c); #eta; tracks", {HistType::kTH2F, {{600, 0 ,2*M_PI}, {35, -4.5, -1}}}},
+         {"muon_vx", "; x (cm); counts", {HistType::kTH1F, {{200, -10, 10}}}},
+         {"muon_vy", "; y (cm); counts", {HistType::kTH1F, {{200, -10, 10}}}},
+         {"muon_vz", "; z (cm); counts", {HistType::kTH1F, {{500, -100, 25}}}},
+         {"muon_pT", "; p_{T} (GeV/c); ", {HistType::kTH1F, {{100, 0.0, 5}}}},
+         {"muon_eta", "; #eta; ", {HistType::kTH1F, {{35, -4.5, -1}}}},
          {"MuonMotherParticle", "; pdgCode; counts", {HistType::kTH1F, {{nBins, -1000, 1000}}}},
-         {"MuonMotherParticle_vx", ": x (cm); counts", {HistType::kTH1F, {{nBins, -1000, 1000}}}},
-         {"MuonMotherParticle_vy", ": y (cm); counts", {HistType::kTH1F, {{nBins, -1000, 1000}}}},
-         {"MuonMotherParticle_vz", ": z (cm); counts", {HistType::kTH1F, {{nBins, -1000, 1000}}}}
+         {"MuonMotherParticle_vx", "; x (cm); counts", {HistType::kTH1F, {{200, -10, 10}}}},
+         {"MuonMotherParticle_vy", "; y (cm); counts", {HistType::kTH1F, {{200, -10, 10}}}},
+         {"MuonMotherParticle_vz", "; z (cm); counts", {HistType::kTH1F, {{500, -25, 25}}}}
       }
    };
 
@@ -47,10 +48,11 @@ struct pca_mc {
             auto mu_phi = MFTTrackId.phi();
             auto mu_eta = MFTTrackId.eta();
             auto mu_pt = MFTTrackId.pt();
-            registry.get<TH2>(HIST("MuonPtEta"))->Fill(mu_pt, mu_eta);
             registry.get<TH1>(HIST("muon_vx"))->Fill(mu_vx);
             registry.get<TH1>(HIST("muon_vy"))->Fill(mu_vy);
             registry.get<TH1>(HIST("muon_vz"))->Fill(mu_vz);
+            registry.get<TH1>(HIST("muon_pT"))->Fill(mu_pt);
+            registry.get<TH1>(HIST("muon_eta"))->Fill(mu_eta);
          }
          
          //Get mother particle information
