@@ -28,11 +28,13 @@ struct pca_mc {
          {"MuonMotherParticle", "; pdgCode; counts", {HistType::kTH1F, {{nBins, -1000, 1000}}}},
          {"MuonMotherParticle_vx", "; x (cm); counts", {HistType::kTH1F, {{200, -10, 10}}}},
          {"MuonMotherParticle_vy", "; y (cm); counts", {HistType::kTH1F, {{200, -10, 10}}}},
-         {"MuonMotherParticle_vz", "; z (cm); counts", {HistType::kTH1F, {{500, -25, 25}}}}
+         {"MuonMotherParticle_vz", "; z (cm); counts", {HistType::kTH1F, {{500, -25, 25}}}},
+         {"RecoMass", "; (GeV/c2); counts", {HistType::kTH1F, {{1000, 1.7, 2.0}}}}
       }
    };
 
    void process(MFTTracksLabeled const& mfttracks, aod::McParticles const& particles, aod::McTrackLabels const& labels){
+      int i = 0;
       for(auto& mfttrack : mfttracks){
          //Load MFT tracks information
          auto MFTTrackId = mfttrack.mcParticle();
@@ -71,39 +73,26 @@ struct pca_mc {
             registry.get<TH1>(HIST("MuonMotherParticle_vy"))->Fill(mu_mother_vy);
             registry.get<TH1>(HIST("MuonMotherParticle_vz"))->Fill(mu_mother_vz);
 
-            auto DaughterParticles = mu_motherId.daughtersIds();
-            auto daughter_1 = particles.rawIteratorAt(DaughterParticles[0]);
-            auto daughter_2 = particles.rawIteratorAt(DaughterParticles[1]);
-            auto daughter_3 = particles.rawIteratorAt(DaughterParticles[2]);
-            
-            auto daughter_1_PDGCode = daughter_1.pdgCode();
-            auto daughter_1_px = daughter_1.px();
-            auto daughter_1_py = daughter_1.py();
-            auto daughter_1_pz = daughter_1.pz();
-            auto daughter_1_vx = daughter_1.vx();
-            auto daughter_1_vy = daughter_1.vy();
-            auto daughter_1_vz = daughter_1.vz();
-            auto daughter_2_PDGCode = daughter_2.pdgCode();
-            auto daughter_2_px = daughter_2.px();
-            auto daughter_2_py = daughter_2.py();
-            auto daughter_2_pz = daughter_2.pz();
-            auto daughter_2_vx = daughter_2.vx();
-            auto daughter_2_vy = daughter_2.vy();
-            auto daughter_2_vz = daughter_2.vz();
-            auto daughter_3_PDGCode = daughter_3.pdgCode();
-            auto daughter_3_px = daughter_3.px();
-            auto daughter_3_py = daughter_3.py();
-            auto daughter_3_pz = daughter_3.pz();
-            auto daughter_3_vx = daughter_3.vx();
-            auto daughter_3_vy = daughter_3.vy();
-            auto daughter_3_vz = daughter_3.vz();
-
-            
-            if(abs(mu_MotherPDGCode)!=211) cout << mu_MotherPDGCode << ",  " << daughter_1_PDGCode << ",  "<< daughter_2_PDGCode << ",  " << daughter_3_PDGCode << endl;
-            //cout << daughter_1_PDGCode << ": " << daughter_1_vz << ",  "<< daughter_2_PDGCode << ": " << daughter_2_vz << ",  " << daughter_3_PDGCode << ": " << daughter_3_vz << ",  " << daughter_4_PDGCode << ":" << daughter_4_vz << endl;
-         
-
+            if(abs(mu_MotherPDGCode)==421){
+               i++;
+               float Daughter_E = 0;
+               float Daughter_px = 0;
+               float Daughter_py = 0;
+               float Daughter_pz = 0;
+               auto Daughters = mu_motherId.daughters_as<aod::McParticles>();
+               //int ddN = Daughters.size();
+               for(auto& Daughter : Daughters){
+                  Daughter_E += Daughter.e();
+                  Daughter_px += Daughter.px();
+                  Daughter_py += Daughter.py();
+                  Daughter_pz += Daughter.pz();
+               }
+               auto iMass = sqrt(pow(Daughter_E,2)-pow(Daughter_px,2)-pow(Daughter_py,2)-pow(Daughter_pz,2));
+               cout << iMass << ": " << i << endl;
+               registry.get<TH1>(HIST("RecoMass"))->Fill(iMass);
+            }
          }
+
 
       }
    }
