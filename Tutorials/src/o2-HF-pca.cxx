@@ -41,7 +41,10 @@ struct pca_mc {
          registry.get<TH1>(HIST("nParticle"))->Fill(PDGCode);
 
          //Get muon MC information
-         if(PDGCode==13){
+         if(abs(PDGCode)==13){
+            auto mu_px = MFTTrackId.px();
+            auto mu_py = MFTTrackId.py();
+            auto mu_pz = MFTTrackId.pz();
             auto mu_vx = MFTTrackId.vx();
             auto mu_vy = MFTTrackId.vy();
             auto mu_vz = MFTTrackId.vz();
@@ -55,18 +58,51 @@ struct pca_mc {
             registry.get<TH1>(HIST("muon_eta"))->Fill(mu_eta);
          }
          
-         //Get mother particle information
-         if(MFTTrackId.has_mothers() && PDGCode==13){
+         //Get muon mother particle information
+         if(MFTTrackId.has_mothers() && abs(PDGCode)==13){
             auto MotherParticles = MFTTrackId.mothersIds();
-            auto motherId = particles.rawIteratorAt(MotherParticles[0]);
-            auto MotherPDGCode = motherId.pdgCode();
-            auto mother_vx = motherId.vx();
-            auto mother_vy = motherId.vy();
-            auto mother_vz = motherId.vz();
-            registry.get<TH1>(HIST("MuonMotherParticle"))->Fill(MotherPDGCode);
-            registry.get<TH1>(HIST("MuonMotherParticle_vx"))->Fill(mother_vx);
-            registry.get<TH1>(HIST("MuonMotherParticle_vy"))->Fill(mother_vy);
-            registry.get<TH1>(HIST("MuonMotherParticle_vz"))->Fill(mother_vz);
+            auto mu_motherId = particles.rawIteratorAt(MotherParticles[0]);
+            auto mu_MotherPDGCode = mu_motherId.pdgCode();
+            auto mu_mother_vx = mu_motherId.vx();
+            auto mu_mother_vy = mu_motherId.vy();
+            auto mu_mother_vz = mu_motherId.vz();
+            registry.get<TH1>(HIST("MuonMotherParticle"))->Fill(mu_MotherPDGCode);
+            registry.get<TH1>(HIST("MuonMotherParticle_vx"))->Fill(mu_mother_vx);
+            registry.get<TH1>(HIST("MuonMotherParticle_vy"))->Fill(mu_mother_vy);
+            registry.get<TH1>(HIST("MuonMotherParticle_vz"))->Fill(mu_mother_vz);
+
+            auto DaughterParticles = mu_motherId.daughtersIds();
+            auto daughter_1 = particles.rawIteratorAt(DaughterParticles[0]);
+            auto daughter_2 = particles.rawIteratorAt(DaughterParticles[1]);
+            auto daughter_3 = particles.rawIteratorAt(DaughterParticles[2]);
+            
+            auto daughter_1_PDGCode = daughter_1.pdgCode();
+            auto daughter_1_px = daughter_1.px();
+            auto daughter_1_py = daughter_1.py();
+            auto daughter_1_pz = daughter_1.pz();
+            auto daughter_1_vx = daughter_1.vx();
+            auto daughter_1_vy = daughter_1.vy();
+            auto daughter_1_vz = daughter_1.vz();
+            auto daughter_2_PDGCode = daughter_2.pdgCode();
+            auto daughter_2_px = daughter_2.px();
+            auto daughter_2_py = daughter_2.py();
+            auto daughter_2_pz = daughter_2.pz();
+            auto daughter_2_vx = daughter_2.vx();
+            auto daughter_2_vy = daughter_2.vy();
+            auto daughter_2_vz = daughter_2.vz();
+            auto daughter_3_PDGCode = daughter_3.pdgCode();
+            auto daughter_3_px = daughter_3.px();
+            auto daughter_3_py = daughter_3.py();
+            auto daughter_3_pz = daughter_3.pz();
+            auto daughter_3_vx = daughter_3.vx();
+            auto daughter_3_vy = daughter_3.vy();
+            auto daughter_3_vz = daughter_3.vz();
+
+            
+            if(abs(mu_MotherPDGCode)!=211) cout << mu_MotherPDGCode << ",  " << daughter_1_PDGCode << ",  "<< daughter_2_PDGCode << ",  " << daughter_3_PDGCode << endl;
+            //cout << daughter_1_PDGCode << ": " << daughter_1_vz << ",  "<< daughter_2_PDGCode << ": " << daughter_2_vz << ",  " << daughter_3_PDGCode << ": " << daughter_3_vz << ",  " << daughter_4_PDGCode << ":" << daughter_4_vz << endl;
+         
+
          }
 
       }
