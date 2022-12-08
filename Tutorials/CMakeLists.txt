@@ -243,6 +243,11 @@ o2physics_add_dpl_workflow(h3-0-startingpoint
                   COMPONENT_NAME AnalysisTutorial)
 
 o2physics_add_dpl_workflow(hf-pca
-                  SOURCES src/o2-HF-pca.cxx
-                  PUBLIC_LINK_LIBRARIES O2::Framework
+                   SOURCES src/o2-HF-pca.cxx
+                  PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore 
                   COMPONENT_NAME AnalysisTutorial)
+
+#o2physics_add_dpl_workflow(mult-fwd-mc
+#                  SOURCES src/Mult_fwd_MC.cxx
+#                  PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore 
+#                  COMPONENT_NAME AnalysisTutorial)
