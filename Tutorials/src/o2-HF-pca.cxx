@@ -11,6 +11,8 @@
 #include "Framework/runDataProcessing.h"
 
 #include "ReconstructionDataFormats/GlobalTrackID.h"
+#include "ReconstructionDataFormats/TrackFwd.h"
+#include "ReconstructionDataFormats/DCA.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Centrality.h"
@@ -116,6 +118,10 @@ struct AccessMcData {
       {"D+-_DecayVz", "; decay(z cm); ", {HistType::kTH1F, {{500,-50,50}}}},
       {"Ds+-_DecayVz", "; decay(z cm); ", {HistType::kTH1F, {{500,-50,50}}}},
       {"K+-_DecayVz", "; decay(z cm); ", {HistType::kTH1F, {{500,-10,10}}}},
+      {"else_DecayVz", "; decay(z cm); ", {HistType::kTH1F, {{500,-50,50}}}},
+      {"muPhi", "; Phi; ", {HistType::kTH1F, {{360,-1,2*o2::math_utils::pi()+1}}}},
+      {"muEta", "; Eta; ", {HistType::kTH1F, {{1400,-7,0}}}},
+      {"MC_PCA_Estimate_D0MuK", "; est-Zaxis (cm); truth-estZ", {HistType::kTH2F, {{1000,-50,50},{10000,-1,1}}}},
 
     }
   };
@@ -321,7 +327,7 @@ struct AccessMcData {
                   float mK = 0.498;
                   for(auto& Daughter : Daughters){
                     if(fabs(Daughter.pdgCode())==13 || fabs(Daughter.pdgCode())==321){
-                      cout << Daughter.pdgCode() << ", " ;
+                      //cout << Daughter.pdgCode() << ", " ;
                       if(fabs(Daughter.pdgCode())==321){
                         //Replace to pion from kaon
                         Daughter_E += Daughter.e();//*mK/mPi;
@@ -339,7 +345,7 @@ struct AccessMcData {
                     }
                     registry.fill(HIST("D0DecayParticles"), Daughter.pdgCode());
                   }
-                  cout << endl;
+                  //cout << endl;
                   if(i<=1) continue;
                   auto iMass = sqrt(pow(Daughter_E,2)-pow(Daughter_px,2)-pow(Daughter_py,2)-pow(Daughter_pz,2));
                   registry.fill(HIST("D0RecMass"), iMass);
@@ -369,7 +375,7 @@ struct AccessMcData {
                       pcaz = z0;
                     }
                   }
-                  cout << "McVertex: " << particle.vz() << "  McMomVertex: " << mcMom.vz() << "  Diff: " << fabs(mcMom.vz()-particle.vz()) << endl;
+                  //cout << "McVertex: " << particle.vz() << "  McMomVertex: " << mcMom.vz() << "  Diff: " << fabs(mcMom.vz()-particle.vz()) << endl;
                   registry.fill(HIST("D0->muK"), particle.vz()-mcMom.vz());
                 }
 
@@ -417,7 +423,7 @@ struct AccessMcData {
   PROCESS_SWITCH(AccessMcData, processMu, "Process particle-level info for Mu", true);
 
 //12 Dec.~
-  void processPCA(soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels>::iterator const& collision, MFTTracksLabeled const& tracks, aod::McParticles const& particleMC, aod::McCollisions const&)
+  void processmyPCA(soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels>::iterator const& collision, MFTTracksLabeled const& tracks, aod::McParticles const& particleMC, aod::McCollisions const&)
   {
     if(collision.has_mcCollision()){
       if((collision.mcCollision().posZ() < zMax) && (collision.mcCollision().posZ() > -zMax)){
@@ -433,6 +439,8 @@ struct AccessMcData {
                 for(auto Daughter : Daughters){
                   if(fabs(Daughter.pdgCode())==13){
                     auto mu_vz = Daughter.vz();
+                    auto mu_vx = Daughter.vx();
+                    auto mu_vy = Daughter.vy();
                     if(fabs(mcMom.pdgCode()==411)){
                       registry.fill(HIST("D+-_DecayVz"), mu_vz);
                     } else if(fabs(mcMom.pdgCode())==421){
@@ -441,8 +449,51 @@ struct AccessMcData {
                       registry.fill(HIST("Ds+-_DecayVz"), mu_vz);
                     } else if(fabs(mcMom.pdgCode()==321)){
                       registry.fill(HIST("K+-_DecayVz"), mu_vz);
+                    } else registry.fill(HIST("else_DecayVz"), mu_vz);
+                    registry.fill(HIST("muPhi"), Daughter.phi());
+                    registry.fill(HIST("muEta"), Daughter.eta());
+                  }
+                }
+                if(fabs(mcMom.pdgCode()==421 && particle.pt()>=0.5)){
+                  int exist_K = 0;
+                  auto muEta = particle.eta();
+                  auto muPhi = particle.phi();
+                  auto mu_vz = particle.vz();
+                  auto mu_vx = particle.vx();
+                  auto mu_vy = particle.vy();
+                  float kEta, kPhi, pcaz;
+                  float closest = 1000;
+                  for(auto& Daughter : Daughters){
+                    if(fabs(Daughter.pdgCode())==321){
+                      kEta = Daughter.eta();
+                      kPhi = Daughter.phi();
+                      exist_K++;
                     }
                   }
+                  if(exist_K==0) continue;
+                  for(auto s=0; s<=100000; s++){
+                    auto s0 = 50-s/1000.0;
+                    auto z0 = -50;
+                    auto vecuni = (s0-mu_vz)/(z0-mu_vz);
+                    //cout << "Debug: " << z0 << endl;
+                    auto muY = mu_vy + z0*tan(2*atan(exp(-muEta)));
+                    auto muX = mu_vx + muY/tan(muPhi);
+                    auto kY = mu_vy + z0*tan(2*atan(exp(-kEta)));
+                    auto kX = mu_vx + kY/tan(kPhi);
+                    //cout << mu_vx << "cm; " << mu_vy << "cm" << "MFT#1 layer: " << muX << "cm; " << muY << "cm" << endl;
+                    auto mu_pcaX = mu_vx + vecuni*(muX-mu_vx);
+                    auto mu_pcaY = mu_vy + vecuni*(muY-mu_vy);
+                    auto k_pcaX = mu_vx + vecuni*(kX-mu_vx);
+                    auto k_pcaY = mu_vy + vecuni*(kY-mu_vy);
+
+                    auto dist_mu_k = sqrt(pow(mu_pcaX-k_pcaX,2)+pow(mu_pcaY-k_pcaY,2));
+                    if(closest>=dist_mu_k){
+                      closest = dist_mu_k;
+                      pcaz = s0;
+                    }
+                  }
+                  cout << "PCA-Z: " << pcaz << ",  Closest Value: " << closest << ",  Correct PCA-Z: " << mu_vz << endl;
+                  registry.fill(HIST("MC_PCA_Estimate_D0MuK"), pcaz, mu_vz-pcaz);
                 }
               }
             }
@@ -451,7 +502,8 @@ struct AccessMcData {
       }
     }
   }
-  PROCESS_SWITCH(AccessMcData, processPCA, "Process particle-level info for PCA", true);
+  PROCESS_SWITCH(AccessMcData, processmyPCA, "Process particle-level info for PCA", true);
+
 };
 
 /*
