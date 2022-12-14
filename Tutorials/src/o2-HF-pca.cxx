@@ -122,7 +122,8 @@ struct AccessMcData {
       {"muPhi", "; Phi; ", {HistType::kTH1F, {{360,-1,2*o2::math_utils::pi()+1}}}},
       {"muEta", "; Eta; ", {HistType::kTH1F, {{1400,-7,0}}}},
       {"MC_PCA_Estimate_D0MuK", "; est-Zaxis (cm); truth-estZ", {HistType::kTH2F, {{1000,-50,50},{10000,-1,1}}}},
-
+      {"MC_PCA_Truth", "; est-Zaxis (cm); ", {HistType::kTH1F, {{500,-25,25}}}},
+      {"MC_PCA_False", "; est-Zaxis (cm); ", {HistType::kTH1F, {{500,-25,25}}}},
     }
   };
 
@@ -454,6 +455,7 @@ struct AccessMcData {
                     registry.fill(HIST("muEta"), Daughter.eta());
                   }
                 }
+                //Secondary Vertex estimation via exact D0->muK of MC info.
                 if(fabs(mcMom.pdgCode()==421 && particle.pt()>=0.5)){
                   int exist_K = 0;
                   auto muEta = particle.eta();
@@ -485,15 +487,72 @@ struct AccessMcData {
                     auto mu_pcaY = mu_vy + vecuni*(muY-mu_vy);
                     auto k_pcaX = mu_vx + vecuni*(kX-mu_vx);
                     auto k_pcaY = mu_vy + vecuni*(kY-mu_vy);
-
                     auto dist_mu_k = sqrt(pow(mu_pcaX-k_pcaX,2)+pow(mu_pcaY-k_pcaY,2));
                     if(closest>=dist_mu_k){
                       closest = dist_mu_k;
                       pcaz = s0;
                     }
                   }
-                  cout << "PCA-Z: " << pcaz << ",  Closest Value: " << closest << ",  Correct PCA-Z: " << mu_vz << endl;
+                  //cout << "PCA-Z: " << pcaz << ",  Closest Value: " << closest << ",  Correct PCA-Z: " << mu_vz << endl;
                   registry.fill(HIST("MC_PCA_Estimate_D0MuK"), pcaz, mu_vz-pcaz);
+                }
+
+                //Secondary Vertex estimation via single mu and all charged particle
+                if(fabs(mcMom.pdgCode()==421 && particle.pt()>=0.5)){
+                  float pcaz;
+                  float closest = 1000;
+                  int pairPDG, truthPDG;
+                  auto muEta = particle.eta();
+                  auto muPhi = particle.phi();
+                  auto mu_vz = particle.vz();
+                  auto mu_vx = particle.vx();
+                  auto mu_vy = particle.vy();
+                  for(auto& Daughter : Daughters){
+                    if(fabs(Daughter.pdgCode())==321){
+                      truthPDG = Daughter.pdgCode();
+                    }
+                    
+                  }
+
+                  for(auto pairtrack : tracks){
+                    if(!pairtrack.has_mcParticle()) continue;
+                    auto pairparticle = pairtrack.mcParticle();
+                    if(pairparticle.globalIndex()==particle.globalIndex()) continue;
+                    auto pEta = pairparticle.eta();
+                    auto pPhi = pairparticle.phi();
+                    auto pvx = pairparticle.vx();
+                    auto pvy = pairparticle.vy();
+                    auto pvz = pairparticle.vz();
+                    for(auto s=0; s<=100000; s++){
+                      auto s0 = 50-s/1000.0;
+                      auto z0 = -50;
+                      auto vecuni_mu = (s0-mu_vz)/(z0-mu_vz);
+                      auto muY = mu_vy + z0*tan(2*atan(exp(-muEta)));
+                      auto muX = mu_vx + muY/tan(muPhi);
+                      auto vecuni_pair = (s0-pvz)/(z0-pvz);
+                      auto pY = pvy + z0*tan(2*atan(exp(-pEta)));
+                      auto pX = pvx + pY/tan(pPhi);
+
+                      auto mu_pcaX = mu_vx + vecuni_mu*(muX-mu_vx);
+                      auto mu_pcaY = mu_vy + vecuni_mu*(muY-mu_vy);
+                      auto p_pcaX = pvx + vecuni_pair*(pX-pvx);
+                      auto p_pcaY = pvy + vecuni_pair*(pY-pvy);
+                      auto dist_mu_k = sqrt(pow(mu_pcaX-p_pcaX,2)+pow(mu_pcaY-p_pcaY,2));
+                      if(closest>=dist_mu_k){
+                        closest = dist_mu_k;
+                        pcaz = s0;
+                        pairPDG = pairparticle.pdgCode();
+                      }
+                    }
+                  }
+                  if(pairPDG==truthPDG){
+                    cout << "Estimate z: " << pcaz << ", Truth z: " << mu_vz << ", Pair PDGCode: " << pairPDG << ",  Truth" << endl;
+                    registry.fill(HIST("MC_PCA_Truth"), pcaz);
+                  }
+                  if(pairPDG!=truthPDG){
+                    cout << "Estimate z: " << pcaz << ", Truth z: " << mu_vz << ", Pair PDGCode: " << pairPDG << ",  False" << endl;
+                    registry.fill(HIST("MC_PCA_False"), pcaz);
+                  }
                 }
               }
             }
@@ -503,7 +562,6 @@ struct AccessMcData {
     }
   }
   PROCESS_SWITCH(AccessMcData, processmyPCA, "Process particle-level info for PCA", true);
-
 };
 
 /*
