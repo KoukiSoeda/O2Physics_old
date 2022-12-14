@@ -511,7 +511,7 @@ struct AccessMcData {
                     if(fabs(Daughter.pdgCode())==321){
                       truthPDG = Daughter.pdgCode();
                     }
-                    
+
                   }
 
                   for(auto pairtrack : tracks){
@@ -563,124 +563,6 @@ struct AccessMcData {
   }
   PROCESS_SWITCH(AccessMcData, processmyPCA, "Process particle-level info for PCA", true);
 };
-
-/*
-  void processPi(soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels>::iterator const& collision, MFTTracksLabeled const& tracks, aod::McParticles const& particleMC, aod::McCollisions const&)
-  {
-    // In the MFT the measurement of pT is not precise, so we access it by using the particle's pT instead
-    if (collision.has_mcCollision()){
-      if ((collision.mcCollision().posZ() < zMax) && (collision.mcCollision().posZ() > -zMax)) {
-        if (!useEvSel || (useEvSel && collision.sel8())) {
-          for (auto& track : tracks) {
-            if (!track.has_mcParticle()) continue;
-              
-            auto particle = track.mcParticle(); // this mcParticle doesn't necessarily come from the right mcCollision
-                
-            if(fabs(particle.pdgCode()) != 211) continue;
-
-            registry.fill(HIST("PiToPartPtEta"), particle.pt(), particle.eta());
-
-            if (particle.mcCollisionId() == collision.mcCollision().globalIndex()) { // mcParticles come from the right mcCollision
-              registry.fill(HIST("PiPDGcode"), particle.pdgCode());
-              registry.fill(HIST("mPiPt"), particle.pt());
-              registry.fill(HIST("mPiVx"), particle.vx());
-              registry.fill(HIST("mPiVy"), particle.vy());
-              registry.fill(HIST("mPiVz"), particle.vz());
-
-              if(particle.has_mothers()){
-              auto mcMom = particleMC.rawIteratorAt(particle.mothersIds()[0]);
-                if(mcMom.daughtersIds().back() == particle.globalIndex()){
-                  if(fabs(mcMom.pdgCode()) < 38 )   registry.fill(HIST("MomOfPiPdgCode"), 0.0, 1);
-                  if(fabs(mcMom.pdgCode()) == 113 ) registry.fill(HIST("MomOfPiPdgCode"), 1.0, 1);
-                  if(fabs(mcMom.pdgCode()) == 130 ) registry.fill(HIST("MomOfPiPdgCode"), 2.0, 1);
-                  if(fabs(mcMom.pdgCode()) == 221 ) registry.fill(HIST("MomOfPiPdgCode"), 3.0, 1);
-                  if(fabs(mcMom.pdgCode()) == 223 ) registry.fill(HIST("MomOfPiPdgCode"), 4.0, 1);
-                  if(fabs(mcMom.pdgCode()) == 310 ) registry.fill(HIST("MomOfPiPdgCode"), 5.0, 1);
-                  if(fabs(mcMom.pdgCode()) == 313 ) registry.fill(HIST("MomOfPiPdgCode"), 6.0, 1);
-                  if(fabs(mcMom.pdgCode()) == 321 ) registry.fill(HIST("MomOfPiPdgCode"), 7.0, 1);
-                  if(fabs(mcMom.pdgCode()) == 323 ) registry.fill(HIST("MomOfPiPdgCode"), 8.0, 1);
-                  if(fabs(mcMom.pdgCode()) == 331 ) registry.fill(HIST("MomOfPiPdgCode"), 9.0, 1);
-                  if(fabs(mcMom.pdgCode()) == 333 ) registry.fill(HIST("MomOfPiPdgCode"), 10.0, 1);
-                  if(fabs(mcMom.pdgCode()) == 411 ) registry.fill(HIST("MomOfPiPdgCode"), 11.0, 1);
-                  if(fabs(mcMom.pdgCode()) == 413 ) registry.fill(HIST("MomOfPiPdgCode"), 12.0, 1);
-                  if(fabs(mcMom.pdgCode()) == 421 ) registry.fill(HIST("MomOfPiPdgCode"), 13.0, 1);
-                  if(fabs(mcMom.pdgCode()) == 431 ) registry.fill(HIST("MomOfPiPdgCode"), 14.0, 1);
-                  if(fabs(mcMom.pdgCode()) == 511 ) registry.fill(HIST("MomOfPiPdgCode"), 15.0, 1);
-                  if(fabs(mcMom.pdgCode()) == 521 ) registry.fill(HIST("MomOfPiPdgCode"), 16.0, 1);
-                  if(fabs(mcMom.pdgCode()) == 531 ) registry.fill(HIST("MomOfPiPdgCode"), 17.0, 1);
-                  if(fabs(mcMom.pdgCode()) > 999 ) registry.fill(HIST("MomOfPiPdgCode"), 18.0, 1);
-                  //registry.fill(HIST("MomOfPiPdgCode"), mcMom.pdgCode());
-                }
-              }
-            }
-            if ((particle.mcCollisionId() != collision.mcCollision().globalIndex()) || (!particle.isPhysicalPrimary())) {
-              if (particle.mcCollisionId() != collision.mcCollision().globalIndex()) {
-                registry.fill(HIST("PiToPartPtEtaFakeMcColl"), particle.pt(), particle.eta());
-              }
-              continue;
-            }
-            // mcParticles come from the rght collisions and primary
-            registry.fill(HIST("PiToPartPtEtaPrim"), particle.pt(), particle.eta());
-            registry.fill(HIST("mPrimPiPt"), particle.pt());
-            registry.fill(HIST("mPrimPiVx"), particle.vx());
-            registry.fill(HIST("mPrimPiVy"), particle.vy());
-            registry.fill(HIST("mPrimPiVz"), particle.vz());
-          }
-        }
-      }
-    }  
-  }
-  PROCESS_SWITCH(AccessMcData, processPi, "Process particle-level info for Pi", true);
-*/
-/*
-  void processK(soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels>::iterator const& collision, MFTTracksLabeled const& tracks, aod::McParticles const& particleMC, aod::McCollisions const&)
-  {
-    // In the MFT the measurement of pT is not precise, so we access it by using the particle's pT instead
-    if (collision.has_mcCollision()){
-      if ((collision.mcCollision().posZ() < zMax) && (collision.mcCollision().posZ() > -zMax)) {
-        if (!useEvSel || (useEvSel && collision.sel8())) {
-          for (auto& track : tracks) {
-            if (!track.has_mcParticle()) continue;
-              
-            auto particle = track.mcParticle(); // this mcParticle doesn't necessarily come from the right mcCollision
-                
-            if(fabs(particle.pdgCode()) != 321) continue;
-
-            registry.fill(HIST("KToPartPtEta"), particle.pt(), particle.eta());
-
-            if (particle.mcCollisionId() == collision.mcCollision().globalIndex()) { // mcParticles come from the right mcCollision
-              registry.fill(HIST("KPDGcode"), particle.pdgCode());
-              registry.fill(HIST("mKPt"), particle.pt());
-              registry.fill(HIST("mKVx"), particle.vx());
-              registry.fill(HIST("mKVy"), particle.vy());
-              registry.fill(HIST("mKVz"), particle.vz());
-
-              if(particle.has_mothers()){
-              auto mcMom = particleMC.rawIteratorAt(particle.mothersIds()[0]);
-                if(mcMom.daughtersIds().back() == particle.globalIndex()){
-                  registry.fill(HIST("MomOfKPdgCode"), mcMom.pdgCode());
-                }
-              }
-            }
-            if ((particle.mcCollisionId() != collision.mcCollision().globalIndex()) || (!particle.isPhysicalPrimary())) {
-              if (particle.mcCollisionId() != collision.mcCollision().globalIndex()) {
-                registry.fill(HIST("KToPartPtEtaFakeMcColl"), particle.pt(), particle.eta());
-              }
-              continue;
-            }
-            // mcParticles come from the rght collisions and primary
-            registry.fill(HIST("KToPartPtEtaPrim"), particle.pt(), particle.eta());
-            registry.fill(HIST("mPrimKPt"), particle.pt());
-            registry.fill(HIST("mPrimKVx"), particle.vx());
-            registry.fill(HIST("mPrimKVy"), particle.vy());
-            registry.fill(HIST("mPrimKVz"), particle.vz());
-          }
-        }
-      }
-    }
-  }
-  PROCESS_SWITCH(AccessMcData, processK, "Process particle-level info for K", true);
-*/
 
 WorkflowSpec
   defineDataProcessing(ConfigContext const& cfgc)
