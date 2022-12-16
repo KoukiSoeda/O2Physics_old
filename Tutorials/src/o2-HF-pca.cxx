@@ -463,12 +463,16 @@ struct AccessMcData {
                   auto mu_vz = particle.vz();
                   auto mu_vx = particle.vx();
                   auto mu_vy = particle.vy();
-                  float kEta, kPhi, pcaz;
+                  float kEta, kPhi, pcaz, kvx, kvy, kvz;
                   float closest = 1000;
                   for(auto& Daughter : Daughters){
                     if(fabs(Daughter.pdgCode())==321){
                       kEta = Daughter.eta();
                       kPhi = Daughter.phi();
+                      kvx = Daughter.vx();
+                      kvy = Daughter.vy();
+                      kvz = Daughter.vz();
+                      
                       exist_K++;
                     }
                   }
@@ -477,16 +481,17 @@ struct AccessMcData {
                     auto s0 = 50-s/1000.0;
                     auto z0 = -50;
                     auto vecuni = (s0-mu_vz)/(z0-mu_vz);
+                    auto vecuni_k = (s0-kvz)/(z0-kvz);
                     //cout << "Debug: " << z0 << endl;
                     auto muY = mu_vy + z0*tan(2*atan(exp(-muEta)));
                     auto muX = mu_vx + muY/tan(muPhi);
-                    auto kY = mu_vy + z0*tan(2*atan(exp(-kEta)));
-                    auto kX = mu_vx + kY/tan(kPhi);
+                    auto kY = kvy + z0*tan(2*atan(exp(-kEta)));
+                    auto kX = kvx + kY/tan(kPhi);
                     //cout << mu_vx << "cm; " << mu_vy << "cm" << "MFT#1 layer: " << muX << "cm; " << muY << "cm" << endl;
                     auto mu_pcaX = mu_vx + vecuni*(muX-mu_vx);
                     auto mu_pcaY = mu_vy + vecuni*(muY-mu_vy);
-                    auto k_pcaX = mu_vx + vecuni*(kX-mu_vx);
-                    auto k_pcaY = mu_vy + vecuni*(kY-mu_vy);
+                    auto k_pcaX = kvx + vecuni_k*(kX-kvx);
+                    auto k_pcaY = kvy + vecuni_k*(kY-kvy);
                     auto dist_mu_k = sqrt(pow(mu_pcaX-k_pcaX,2)+pow(mu_pcaY-k_pcaY,2));
                     if(closest>=dist_mu_k){
                       closest = dist_mu_k;
@@ -499,19 +504,21 @@ struct AccessMcData {
 
                 //Secondary Vertex estimation via single mu and all charged particle
                 if(fabs(mcMom.pdgCode()==421 && particle.pt()>=0.5)){
-                  float pcaz;
+                  float pcaz, pvt;
                   float closest = 1000;
                   int pairPDG, truthPDG;
+                  bool existKaon = false;
                   auto muEta = particle.eta();
                   auto muPhi = particle.phi();
                   auto mu_vz = particle.vz();
                   auto mu_vx = particle.vx();
                   auto mu_vy = particle.vy();
+                  auto mu_time = particle.vt();
                   for(auto& Daughter : Daughters){
                     if(fabs(Daughter.pdgCode())==321){
                       truthPDG = Daughter.pdgCode();
+                      existKaon = true;
                     }
-
                   }
 
                   for(auto pairtrack : tracks){
@@ -538,19 +545,20 @@ struct AccessMcData {
                       auto p_pcaX = pvx + vecuni_pair*(pX-pvx);
                       auto p_pcaY = pvy + vecuni_pair*(pY-pvy);
                       auto dist_mu_k = sqrt(pow(mu_pcaX-p_pcaX,2)+pow(mu_pcaY-p_pcaY,2));
-                      if(closest>=dist_mu_k){
+                      if(closest>=dist_mu_k && fabs(pairparticle.vt()-mu_time)<=0.00001){
                         closest = dist_mu_k;
                         pcaz = s0;
                         pairPDG = pairparticle.pdgCode();
+                        pvt = pairparticle.vt();
                       }
                     }
                   }
                   if(pairPDG==truthPDG){
-                    cout << "Estimate z: " << pcaz << ", Truth z: " << mu_vz << ", Pair PDGCode: " << pairPDG << ",  Truth" << endl;
+                    cout << "Estimate z: " << pcaz << ", Truth z: " << mu_vz << ", Pair PDGCode: " << pairPDG << ", TimeDifference: " << mu_time-pvt << ", Truth" << endl;
                     registry.fill(HIST("MC_PCA_Truth"), pcaz);
                   }
                   if(pairPDG!=truthPDG){
-                    cout << "Estimate z: " << pcaz << ", Truth z: " << mu_vz << ", Pair PDGCode: " << pairPDG << ",  False" << endl;
+                    cout << "Estimate z: " << pcaz << ", Truth z: " << mu_vz << ", Pair PDGCode: " << pairPDG << ", TimeDifference: " << mu_time-pvt << ", False" << endl;
                     registry.fill(HIST("MC_PCA_False"), pcaz);
                   }
                 }
