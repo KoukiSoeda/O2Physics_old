@@ -247,7 +247,4 @@ o2physics_add_dpl_workflow(hf-pca
                   PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore 
                   COMPONENT_NAME AnalysisTutorial)
 
-o2physics_add_dpl_workflow(mft-pca
-                  SOURCES src/HF_MFT_PCA.cxx
-                  PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore 
-                  COMPONENT_NAME AnalysisTutorial)
+
