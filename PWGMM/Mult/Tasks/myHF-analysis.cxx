@@ -1,7 +1,6 @@
 /// \author Koki Soeda
 /// \since 16/12/2022
 
-
 #include <iostream>
 #include <cmath>
 #include "ReconstructionDataFormats/TrackFwd.h"
