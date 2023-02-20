@@ -68,10 +68,12 @@ struct DCAandPCA {
                   if(!track0.has_mcParticle()) continue;
                   auto particle0 = track0.mcParticle();
                   auto t_collision = track0.collision();
+                  
                   if(fabs(particle0.pdgCode())!=13) continue;
                   int estpdg;
                   int64_t truthK_ID,muonID,estID;
                   float vx_mu,vy_mu,vz_mu,px_mu,py_mu,pz_mu,t_mu,mft_mu_x,mft_mu_y,s_mu,dca_mu_x,dca_mu_y;
+                  //float mft_det_x, mft_det_y, mft_det_z;
                   float vx_can,vy_can,vz_can,px_can,py_can,pz_can,t_can,mft_can_x,mft_can_y,s_can,dca_can_x,dca_can_y;
                   float s,t,a,b,c,d,e,f,g,h;
                   float mu_x,mu_y,mu_z,can_x,can_y,can_z,pca_x,pca_y,pca_z;
@@ -99,18 +101,23 @@ struct DCAandPCA {
                                  px_mu = particle0.px();
                                  py_mu = particle0.py();
                                  pz_mu = particle0.pz();
-                                 t_mu = (-46.0-vz_mu)/pz_mu;
+                                 t_mu = (-46-vz_mu)/pz_mu;
                                  mft_mu_x = px_mu*t_mu;
                                  mft_mu_y = py_mu*t_mu;
-                                 s_mu = vz_mu/(vz_mu+46.0);
+                                 s_mu = vz_mu/(vz_mu+46);
+                                 //mft_det_z = track0.z();
+                                 //mft_det_x = track0.x();
+                                 //mft_det_y = track0.y();
                                  dca_mu_x = vx_mu+s_mu*(mft_mu_x-vx_mu);
                                  dca_mu_y = vy_mu+s_mu*(mft_mu_y-vy_mu);
                                  muonID = particle0.globalIndex();
+                                 
+                                 //cout << "mftX: " << mft_det_x << "  mftY: " << mft_det_y << " mftZ: " << mft_det_z << endl;
                                  a = dca_mu_x;
                                  b = mft_mu_x;
                                  c = dca_mu_y;
                                  d = mft_mu_y;
-                                 //cout << "DCA_x: " << a << "DCA_y: " << c << endl;
+                                 //cout << "mft_MC_x: " << b << "  mft_MC_y: " << d << endl;
                                  registry.fill(HIST("muTrack_dcax"), a);
                                  registry.fill(HIST("muTrack_dcay"), c);
                                  registry.fill(HIST("muTrack_mftx"), b);
@@ -129,10 +136,10 @@ struct DCAandPCA {
                            px_can = particle1.px();
                            py_can = particle1.py();
                            pz_can = particle1.pz();
-                           t_can = (-46.0-vz_can)/pz_can;
+                           t_can = (-46-vz_can)/pz_can;
                            mft_can_x = px_can*t_can;
                            mft_can_y = py_can*t_can;
-                           s_can = vz_can/(vz_can+46.0);
+                           s_can = vz_can/(vz_can+46);
                            dca_can_x = vx_can+s_can*(mft_can_x-vx_can);
                            dca_can_y = vy_can+s_can*(mft_can_y-vy_can);
                            e = dca_can_x;
@@ -140,12 +147,8 @@ struct DCAandPCA {
                            g = dca_can_y;
                            h = mft_can_y;
 
-                           float i = pow(b,2)+pow(d,2)+pow(46,2);
-                           float j = pow(f,2)+pow(h,2)+pow(46,2);
-                           float k = b*f+d*h+46*46;
-
-                           s = (k*(-a*f+e*f-c*h+g*h)+j*(a*b-b*e+c*d-d*g))/(pow(k,2)-i*j);
-                           t = (k*s+a*f-e*f+c*h+g*h)/j;
+                           s = ((-e*f+a*f-g*h+c*h)*(b*f+d*h-pow(46,2)) + (e*b-a*b+d*g-c*d)*(pow(f,2)+pow(h,2)+pow(46,2))) / ((pow(b,2)+pow(d,2)+pow(46,2))*(pow(f,2)+pow(h,2)+pow(46,2)) - pow(b*f+d*h-pow(46,2),2));
+                           t = ((b*f+d*h-pow(46,2))*s - e*f + a*f - g*h + c*h) / (pow(f,2)+pow(h,2)+pow(46,2));
 
                            mu_x = dca_mu_x+s*mft_mu_x;
                            mu_y = dca_mu_y+s*mft_mu_y;
@@ -169,6 +172,7 @@ struct DCAandPCA {
                         registry.fill(HIST("pcaz"), pca_z);
                         registry.fill(HIST("PIDpurity"), fabs(estID-truthK_ID));
                         registry.fill(HIST("EstimatePDGcode"), estpdg);
+                        cout << "Distance of each track: " << closest_track << endl;
                      }
                   }
                }
