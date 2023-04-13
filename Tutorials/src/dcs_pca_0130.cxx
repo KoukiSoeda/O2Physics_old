@@ -62,6 +62,71 @@ struct DCAandPCA {
                      aod::McParticles const& particleMC,
                      aod::McCollisions const&)
    {
+
+      //The struct of 3D-vector
+      struct Vector3{
+         double x,y,z;
+         Vector3(double x=0, double y=0, double z=0) : x(x), y(y), z(z) {}
+      };
+
+      //The function to calculate the magnitude of a vector
+      double norm(const Vector3& v){
+         return sqrt(v.x*v.x+v.y*v.y+v.z*v.z);
+      }
+
+      //The function to calculate the unit of vector
+      Vector3 normalize(const Vector3& v){
+         double n = norm(v);
+         return Vector3(v.x/n, v.y/n, v.z/n);
+      }
+
+      //The function to calculate the inner product of two vector
+      double dot(const Vector3& v1, const Vector3& v2){
+         return v1.x*v2.x + v1.y*v2.y + v1.z*v2.z;
+      }
+
+      //The function to calculate of PCA
+      Vector3 computePCA(Vector3 r0, Vector3 v, double dt, double m) {
+         Vector3 r = r0;
+         Vector3 force;
+         double t = 0;
+         double eps = 1e-6; // 収束判定のための誤差
+         double alpha = 0.001; // 学習率
+         int maxIter = 1000; // 最大反復回数
+         int iter = 0; // 反復回数
+
+         while (true) {
+            // 反発力を計算する
+            double r_norm = norm(r);
+            force = normalize(r) * (-m / (r_norm * r_norm * r_norm));
+
+            // 速度を更新する
+            v = v + force * dt;
+
+            // 位置を更新する
+            Vector3 r_new = r + v * dt;
+
+            // 収束判定を行う
+            double diff = norm(r_new - r);
+            if (diff < eps || iter >= maxIter) {
+                  break;
+            }
+
+            // 位置を更新する
+            r = r_new;
+            t = t + dt;
+
+            // 反復回数を更新する
+            iter++;
+         }
+
+         // PCAを計算する
+         double t_pca = -dot(r - r0, v) / dot(v, v);
+         Vector3 r_pca = r0 + v * t_pca;
+
+         return r_pca;
+      }
+
       if(collision.has_mcCollision()){
          if((collision.mcCollision().posZ() < zMax) && (collision.mcCollision().posZ() > -zMax)){
             if(!useEvSel || (useEvSel && collision.sel8())){
@@ -122,17 +187,6 @@ struct DCAandPCA {
                                  dca_mu_z = vz_mu + s_mu*pz_mu;
                                  
                                  //cout << mc_col_verz << ",  " << dca_mu_z << endl;
-                                 //It could be wrong
-                                 /*t_mu = (-46-vz_mu)/pz_mu;
-                                 mft_mu_x = px_mu*t_mu;
-                                 mft_mu_y = py_mu*t_mu;
-                                 s_mu = vz_mu/(vz_mu+46);
-                                 //mft_det_z = track0.z();
-                                 //mft_det_x = track0.x();
-                                 //mft_det_y = track0.y();
-                                 dca_mu_x = vx_mu+s_mu*(mft_mu_x-vx_mu);
-                                 dca_mu_y = vy_mu+s_mu*(mft_mu_y-vy_mu);
-                                 */
 
                                  if(particle0.globalIndex()==Daughter.globalIndex()) muonID = Daughter.globalIndex(); 
                                  //cout << "mftX: " << mft_det_x << "  mftY: " << mft_det_y << " mftZ: " << mft_det_z << endl;
@@ -164,17 +218,20 @@ struct DCAandPCA {
                            px_can = particle1.px();
                            py_can = particle1.py();
                            pz_can = particle1.pz();
+
                            t_can = (-46-vz_can)/pz_can;
-                           mft_can_x = px_can*t_can;
-                           mft_can_y = py_can*t_can;
-                           s_can = vz_can/(vz_can+46);
-                           dca_can_x = vx_can+s_can*(mft_can_x-vx_can);
-                           dca_can_y = vy_can+s_can*(mft_can_y-vy_can);
+                           mft_can_x = vx_can + t_can*px_can;
+                           mft_can_y = vy_can + t_can*py_can;
+                           mft_can_z = vz_can + t_can*pz_can;
+                           s_can = (mc_col_verz-vz_can)/pz_can;
+                           dca_can_x = vx_can + s_can*px_can;
+                           dca_can_y = vy_can + s_can*py_can;
+                           dca_can_z = vz_can + s_can*pz_can;
                            e = dca_can_x;
                            f = mft_can_x;
                            g = dca_can_y;
                            h = mft_can_y;
-
+                        /*
                            s = ((-e*f+a*f-g*h+c*h)*(b*f+d*h-pow(46,2)) + (e*b-a*b+d*g-c*d)*(pow(f,2)+pow(h,2)+pow(46,2))) / ((pow(b,2)+pow(d,2)+pow(46,2))*(pow(f,2)+pow(h,2)+pow(46,2)) - pow(b*f+d*h-pow(46,2),2));
                            t = ((b*f+d*h-pow(46,2))*s - e*f + a*f - g*h + c*h) / (pow(f,2)+pow(h,2)+pow(46,2));
 
@@ -196,6 +253,7 @@ struct DCAandPCA {
                               estpdg = particle1.pdgCode();
                               estID = particle1.globalIndex();
                            }
+                        */
                         }
                         registry.fill(HIST("pcax"), pca_x);
                         registry.fill(HIST("pcay"), pca_y);
