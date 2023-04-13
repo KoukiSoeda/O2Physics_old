@@ -35,11 +35,13 @@ using MFTTracksLabeled = soa::Join<o2::aod::MFTTracks, aod::McMFTTrackLabels>;
 struct DCAandPCA {
    Service<TDatabasePDG> pdg;
    Configurable<bool> useEvSel{"useEvSel", true, "use event selection"};
-   Configurable<float> zMax{"zMax", 5., "value for Zvtx cut"};
+   Configurable<float> zMax{"zMax", 50., "value for Zvtx cut"};
    
    HistogramRegistry registry{
       "registry",
       {
+         {"mcCollision_Vertex", " ; z(cm); ", {HistType::kTH1F, {{10000, -25, 25}}}},
+         {"Distance_D0", " ; z(cm); ", {HistType::kTH1F, {{1000, -0.5, 5}}}},         
          {"muTrack_dcax", " ; x(cm); ", {HistType::kTH1F, {{10000, -100, 100}}}},
          {"muTrack_dcay", " ; y(cm); ", {HistType::kTH1F, {{10000, -100, 100}}}},
          {"muTrack_mftx", " ; x(cm); ", {HistType::kTH1F, {{10000, -100, 100}}}},
@@ -68,11 +70,15 @@ struct DCAandPCA {
                   if(!track0.has_mcParticle()) continue;
                   auto particle0 = track0.mcParticle();
                   auto t_collision = track0.collision();
-                  
+                  auto mc_collision = t_collision.globalIndex();
+                  auto mc_col_verz = collision.mcCollision().posZ();
+                  registry.fill(HIST("mcCollision_Vertex"), mc_col_verz);
+                  //cout << mc_collision << "     :   Track0" << endl;
+
                   if(fabs(particle0.pdgCode())!=13) continue;
                   int estpdg;
                   int64_t truthK_ID,muonID,estID;
-                  float vx_mu,vy_mu,vz_mu,px_mu,py_mu,pz_mu,t_mu,mft_mu_x,mft_mu_y,s_mu,dca_mu_x,dca_mu_y;
+                  float vx_mu,vy_mu,vz_mu,px_mu,py_mu,pz_mu,t_mu,mft_mu_x,mft_mu_y,s_mu,dca_mu_x,dca_mu_y,mft_mu_z,dca_mu_z;
                   //float mft_det_x, mft_det_y, mft_det_z;
                   float vx_can,vy_can,vz_can,px_can,py_can,pz_can,t_can,mft_can_x,mft_can_y,s_can,dca_can_x,dca_can_y;
                   float s,t,a,b,c,d,e,f,g,h;
@@ -83,9 +89,13 @@ struct DCAandPCA {
                         float closest_track = 10000;
                         auto mcMom = particleMC.rawIteratorAt(particle0.mothersIds()[0]);
                         auto Daughters = mcMom.daughters_as<aod::McParticles>();
-                        registry.fill(HIST("D0decayx"), particle0.vx());
-                        registry.fill(HIST("D0decayy"), particle0.vy());
-                        registry.fill(HIST("D0decayz"), particle0.vz());
+
+                        if(fabs(mcMom.pdgCode())==421){
+                           registry.fill(HIST("D0decayx"), particle0.vx());
+                           registry.fill(HIST("D0decayy"), particle0.vy());
+                           registry.fill(HIST("D0decayz"), particle0.vz());
+                           registry.fill(HIST("Distance_D0"), fabs(mc_col_verz - particle0.vz()));
+                        }
 
                         //Actual particles information
                         if(fabs(mcMom.pdgCode())==421){
@@ -101,7 +111,19 @@ struct DCAandPCA {
                                  px_mu = particle0.px();
                                  py_mu = particle0.py();
                                  pz_mu = particle0.pz();
+
                                  t_mu = (-46-vz_mu)/pz_mu;
+                                 mft_mu_x = vx_mu + t_mu*px_mu;
+                                 mft_mu_y = vy_mu + t_mu*py_mu;
+                                 mft_mu_z = vz_mu + t_mu*pz_mu;
+                                 s_mu = (mc_col_verz-vz_mu)/pz_mu;
+                                 dca_mu_x = vx_mu + s_mu*px_mu;
+                                 dca_mu_y = vy_mu + s_mu*py_mu;
+                                 dca_mu_z = vz_mu + s_mu*pz_mu;
+                                 
+                                 //cout << mc_col_verz << ",  " << dca_mu_z << endl;
+                                 //It could be wrong
+                                 /*t_mu = (-46-vz_mu)/pz_mu;
                                  mft_mu_x = px_mu*t_mu;
                                  mft_mu_y = py_mu*t_mu;
                                  s_mu = vz_mu/(vz_mu+46);
@@ -110,8 +132,9 @@ struct DCAandPCA {
                                  //mft_det_y = track0.y();
                                  dca_mu_x = vx_mu+s_mu*(mft_mu_x-vx_mu);
                                  dca_mu_y = vy_mu+s_mu*(mft_mu_y-vy_mu);
-                                 muonID = particle0.globalIndex();
-                                 
+                                 */
+
+                                 if(particle0.globalIndex()==Daughter.globalIndex()) muonID = Daughter.globalIndex(); 
                                  //cout << "mftX: " << mft_det_x << "  mftY: " << mft_det_y << " mftZ: " << mft_det_z << endl;
                                  a = dca_mu_x;
                                  b = mft_mu_x;
@@ -122,12 +145,17 @@ struct DCAandPCA {
                                  registry.fill(HIST("muTrack_dcay"), c);
                                  registry.fill(HIST("muTrack_mftx"), b);
                                  registry.fill(HIST("muTrack_mfty"), d);
+                                 
                               }
                            }
                         }
                         if(signMUON==0) continue;
                         for(auto& track1 : tracks){
                            if(!track1.has_mcParticle()) continue;
+                           auto t1_collision = track1.collision();
+                           auto mc1_collision = t1_collision.globalIndex();
+                           //cout << mc1_collision << endl;
+                           
                            auto particle1 = track1.mcParticle();
                            if(particle1.globalIndex()==muonID) continue;
                            vx_can = particle1.vx();
@@ -157,7 +185,9 @@ struct DCAandPCA {
                            can_y = dca_can_y+t*mft_can_y;
                            can_z = -46*t;
 
-                           float distance_track = pow(mu_x-can_x,2)+pow(mu_y-can_y,2)+pow(mu_z-can_z,2);
+                           //float distance_track = pow(mu_x-can_x,2)+pow(mu_y-can_y,2)+pow(mu_z-can_z,2);
+                           float distance_track = fabs((46*((a-e)*(h-d)+(c-g)*(b-f))) / sqrt(pow(46*(h-d),2)+pow(46*(b-f),2)+pow(b*h-d*f,2)));
+                           
                            if(distance_track<=closest_track){
                               closest_track = distance_track;
                               pca_x = (mu_x+can_x)/2;
@@ -172,7 +202,7 @@ struct DCAandPCA {
                         registry.fill(HIST("pcaz"), pca_z);
                         registry.fill(HIST("PIDpurity"), fabs(estID-truthK_ID));
                         registry.fill(HIST("EstimatePDGcode"), estpdg);
-                        cout << "Distance of each track: " << closest_track << endl;
+                        //cout << "Distance of each track: " << closest_track << endl;
                      }
                   }
                }
