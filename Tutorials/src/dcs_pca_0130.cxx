@@ -3,6 +3,7 @@
 
 #include <iostream>
 #include <cmath>
+#include <vector>
 #include "Framework/Configurable.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
@@ -16,6 +17,7 @@
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "CommonConstants/MathConstants.h"
 #include "Common/Core/RecoDecay.h"
@@ -62,71 +64,6 @@ struct DCAandPCA {
                      aod::McParticles const& particleMC,
                      aod::McCollisions const&)
    {
-
-      //The struct of 3D-vector
-      struct Vector3{
-         double x,y,z;
-         Vector3(double x=0, double y=0, double z=0) : x(x), y(y), z(z) {}
-      };
-
-      //The function to calculate the magnitude of a vector
-      double norm(const Vector3& v){
-         return sqrt(v.x*v.x+v.y*v.y+v.z*v.z);
-      }
-
-      //The function to calculate the unit of vector
-      Vector3 normalize(const Vector3& v){
-         double n = norm(v);
-         return Vector3(v.x/n, v.y/n, v.z/n);
-      }
-
-      //The function to calculate the inner product of two vector
-      double dot(const Vector3& v1, const Vector3& v2){
-         return v1.x*v2.x + v1.y*v2.y + v1.z*v2.z;
-      }
-
-      //The function to calculate of PCA
-      Vector3 computePCA(Vector3 r0, Vector3 v, double dt, double m) {
-         Vector3 r = r0;
-         Vector3 force;
-         double t = 0;
-         double eps = 1e-6; // 収束判定のための誤差
-         double alpha = 0.001; // 学習率
-         int maxIter = 1000; // 最大反復回数
-         int iter = 0; // 反復回数
-
-         while (true) {
-            // 反発力を計算する
-            double r_norm = norm(r);
-            force = normalize(r) * (-m / (r_norm * r_norm * r_norm));
-
-            // 速度を更新する
-            v = v + force * dt;
-
-            // 位置を更新する
-            Vector3 r_new = r + v * dt;
-
-            // 収束判定を行う
-            double diff = norm(r_new - r);
-            if (diff < eps || iter >= maxIter) {
-                  break;
-            }
-
-            // 位置を更新する
-            r = r_new;
-            t = t + dt;
-
-            // 反復回数を更新する
-            iter++;
-         }
-
-         // PCAを計算する
-         double t_pca = -dot(r - r0, v) / dot(v, v);
-         Vector3 r_pca = r0 + v * t_pca;
-
-         return r_pca;
-      }
-
       if(collision.has_mcCollision()){
          if((collision.mcCollision().posZ() < zMax) && (collision.mcCollision().posZ() > -zMax)){
             if(!useEvSel || (useEvSel && collision.sel8())){
@@ -145,7 +82,7 @@ struct DCAandPCA {
                   int64_t truthK_ID,muonID,estID;
                   float vx_mu,vy_mu,vz_mu,px_mu,py_mu,pz_mu,t_mu,mft_mu_x,mft_mu_y,s_mu,dca_mu_x,dca_mu_y,mft_mu_z,dca_mu_z;
                   //float mft_det_x, mft_det_y, mft_det_z;
-                  float vx_can,vy_can,vz_can,px_can,py_can,pz_can,t_can,mft_can_x,mft_can_y,s_can,dca_can_x,dca_can_y;
+                  float vx_can,vy_can,vz_can,px_can,py_can,pz_can,t_can,mft_can_x,mft_can_y,mft_can_z,s_can,dca_can_x,dca_can_y,dca_can_z;
                   float s,t,a,b,c,d,e,f,g,h;
                   float mu_x,mu_y,mu_z,can_x,can_y,can_z,pca_x,pca_y,pca_z;
                   if(particle0.mcCollisionId() == collision.mcCollision().globalIndex()){
@@ -176,8 +113,9 @@ struct DCAandPCA {
                                  px_mu = particle0.px();
                                  py_mu = particle0.py();
                                  pz_mu = particle0.pz();
+                                 auto propaZ = track0.z();
 
-                                 t_mu = (-46-vz_mu)/pz_mu;
+                                 t_mu = (propaZ-vz_mu)/pz_mu;
                                  mft_mu_x = vx_mu + t_mu*px_mu;
                                  mft_mu_y = vy_mu + t_mu*py_mu;
                                  mft_mu_z = vz_mu + t_mu*pz_mu;
@@ -194,12 +132,14 @@ struct DCAandPCA {
                                  b = mft_mu_x;
                                  c = dca_mu_y;
                                  d = mft_mu_y;
+                                 cout << b << "," << d << ",-46," << vx_mu << "," << vy_mu << "," << vz_mu << endl;
+                                 //cout << "MFT_MC_x: " << b << ", MFT_x: " << track0.x() << ", MFT_MC_y: " << d << ", MFT_y: " << track0.y() << ", MFT_z: " << track0.z() <<endl;
                                  //cout << "mft_MC_x: " << b << "  mft_MC_y: " << d << endl;
                                  registry.fill(HIST("muTrack_dcax"), a);
                                  registry.fill(HIST("muTrack_dcay"), c);
                                  registry.fill(HIST("muTrack_mftx"), b);
                                  registry.fill(HIST("muTrack_mfty"), d);
-                                 
+                                 //cout << dca_mu_x << "," << dca_mu_y << "," << dca_mu_z << "," << mft_mu_x << "," << mft_mu_y << "," << mft_mu_z << endl;
                               }
                            }
                         }
@@ -231,6 +171,33 @@ struct DCAandPCA {
                            f = mft_can_x;
                            g = dca_can_y;
                            h = mft_can_y;
+
+                           float p11,p12,p13,p21,p22,p23,u11,u12,u13,u21,u22,u23;
+                           u11 = b-a;
+                           u12 = d-c;
+                           u13 = mft_mu_z-dca_mu_z;
+                           u21 = f-e;
+                           u22 = h-g;
+                           u23 = mft_can_z-dca_can_z;
+                           p11 = a;
+                           p12 = c;
+                           p13 = dca_mu_z;
+                           p21 = e;
+                           p22 = g;
+                           p23 = dca_can_z;
+
+                           float norm = sqrt(pow((u12*u23-u13*u22),2)+pow((u13*u21-u11*u23),2)+pow((u11*u22-u12*u21),2));
+                           float dot = sqrt(pow((u12*u23-u13*u22)*(p11-p21)+(u13*u21-u11*u23)*(p12-p22)+(u11*u22-u12*u21)*(p13-p23),2));
+                           float pro = u11*u21+u12*u22+u13*u23;
+                           if(dot!=0){
+                              float dist = dot/norm;
+                              if(dist<=closest_track){
+                                 closest_track = dist;
+                                 pca_x = (((p11+pro*u21)*(p21-p11))/(1-pro*pro))*u11;
+                                 pca_y = (((p12+pro*u22)*(p22-p12))/(1-pro*pro))*u12;
+                                 pca_z = (((p13+pro*u23)*(p23-p13))/(1-pro*pro))*u13;
+                              }
+                           }
                         /*
                            s = ((-e*f+a*f-g*h+c*h)*(b*f+d*h-pow(46,2)) + (e*b-a*b+d*g-c*d)*(pow(f,2)+pow(h,2)+pow(46,2))) / ((pow(b,2)+pow(d,2)+pow(46,2))*(pow(f,2)+pow(h,2)+pow(46,2)) - pow(b*f+d*h-pow(46,2),2));
                            t = ((b*f+d*h-pow(46,2))*s - e*f + a*f - g*h + c*h) / (pow(f,2)+pow(h,2)+pow(46,2));
@@ -255,6 +222,7 @@ struct DCAandPCA {
                            }
                         */
                         }
+                        //cout << "Closest Distance: " << closest_track << ", x: " << pca_x << ", y: " << pca_y << ", z: " << pca_z << endl;
                         registry.fill(HIST("pcax"), pca_x);
                         registry.fill(HIST("pcay"), pca_y);
                         registry.fill(HIST("pcaz"), pca_z);
